@@ -1,0 +1,38 @@
+{
+  "name": "@napp/logger-nogger-writer",
+  "version": "3.0.1",
+  "description": "napp logger. log write to nogger log write system",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "clear": "npx rimraf --glob lib/**",
+    "tsc": "tsc -p tsconfig.json",
+    "prebuild": "npm version patch && npm run clear",
+    "build": "tsc -p tsconfig.lib.json",
+    "postbuild": "ts-node build.ts > ./lib/package.json",
+    "prepush": "npm run build",
+    "push": "cd lib & npm publish --access=public"
+  },
+  "author": "farcek@gmail.com",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/napp-core/logger-nogger-writer.git"
+  },
+  "devDependencies": {
+    "ts-node": "latest",
+    "typescript": "latest"
+  },
+  "keywords": [
+    "logger",
+    "logging",
+    "logs",
+    "log-file",
+    "log-write"
+  ],
+  "dependencies": {
+    "@napp/logger": "^3.2.6",
+    "cross-fetch": "^4.0.0",
+    "jose": "^4.14.6"
+  }
+}
