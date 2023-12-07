@@ -1,3 +1,4 @@
+import { Exception } from "@napp/exception";
 import { ILogItem, ILogWriter, LogLevel } from "@napp/logger"
 import { fetch } from "cross-fetch"
 import * as jose from 'jose';
@@ -25,39 +26,8 @@ interface INoggerPayload {
     t?: string[], tag?: string[]
 }
 
-interface IError {
-    message: string;
-    name?: string
-    stack?: string;
-}
 
-function error2json(err: any) {
-    if (err) {
-        if (typeof err.toJSON === 'function') {
-            return JSON.stringify(err)
-        }
-        let e: IError = {
-            message: ''
-        }
-        if (err.message) {
-            e.message = err.message
-        } else {
-            e.message = String(err)
-        }
-        if (err.name) {
-            e.name = err.name
-        }
-        if (err.stack) {
-            e.stack = err.stack
-        }
 
-        return e;
-    }
-
-    return {
-        message: 'Unknown Error'
-    }
-}
 
 export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
 
@@ -99,6 +69,8 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
             try {
                 let url = `${opt.serverBaseUrl}/api/write`;
                 let token = await genToken();
+                // console.log(url, token, body);
+
                 let resp = await fetch(url, {
                     method: 'post',
                     headers: {
@@ -108,14 +80,31 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
                     body: JSON.stringify(body)
                 });
 
+                // console.log('333333333',resp)
+
                 if (resp.ok) {
-                    return void (0);
+                    return await resp.json();
                 }
+
+                let nested: Exception;
+
+                let respText = await resp.text();
+                try {
+                    let json = JSON.parse(respText);
+
+                    nested = Exception.from(json)
+                } catch (error) {
+                    nested = new Exception(respText)
+                }
+
+                throw new Exception(["cannot write log. response ${statusText}. status (${status})", { status: resp.status, statusText: resp.statusText }], {
+                    name: 'log.write.cannot',
+                    cause: nested
+                })
+
             } catch (error) {
                 err = error;
-
-                console.warn('tryCount :', i)
-                console.warn(error)
+                console.warn('tryCount :', i, error)
             }
         }
         throw err;
@@ -123,23 +112,17 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
 
     const item2nogger = (it: ILogItem) => {
 
-        let errors: any = undefined;
-
-        if (Array.isArray(it.errors)) {
-            errors = it.errors.map(e => error2json(e))
-        }
-
         let ret: INoggerPayload = {
             c: it.logname,
             l: LogLevel[it.level],
-            i: it.attrs?.instance,
-            j: it.attrs?.job,
-            k: it.attrs?.msgKey,
+            i: (it.attrs?.instance || it.attrs?.ins) as string || undefined,
+            j: it.attrs?.job as string || undefined,
+            k: (it.attrs?.logKey || it.attrs?.msgKey) as string || undefined,
             m: it.message,
-            a: errors ? { ... (it.attrs || {}, errors) } : it.attrs,
+            a: it.attrs,
             n: new Date(it.timestamp),
-            u: it.track,
-            t: it.tags
+            u: it.attrs?.track as string || undefined,
+            t: Array.isArray(it.attrs?.tags) ? it.attrs?.tags as any : undefined
 
         }
         return ret;
@@ -150,6 +133,7 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
 
         $.basy = true;
         try {
+            await sleep(200);
             let items = wData.splice(0);
 
             if (items.length > 0) {
@@ -161,12 +145,27 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
             }
 
             if (wData.length > 0) {
-                doWrite();
+                await _doWrite();
             }
         } catch (error) {
             console.log('log write error', error)
         } finally {
             $.basy = false;
+        }
+    }
+    const _doWrite = async () => {
+        let items = wData.splice(0);
+
+        if (items.length > 0) {
+            if (items.length > 1) {
+                await httpWrite(items.map(it => item2nogger(it)), opt.tryCount || 3)
+            } else {
+                await httpWrite(item2nogger(items[0]), opt.tryCount || 3)
+            }
+        }
+
+        if (wData.length > 0) {
+            await _doWrite();
         }
     }
 
@@ -178,4 +177,14 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
 
 
     return writer;
+}
+
+
+
+function sleep(ms: number) {
+    return new Promise<void>((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, ms);
+    });
 }

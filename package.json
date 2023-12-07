@@ -1,6 +1,6 @@
 {
   "name": "@napp/logger-nogger-writer",
-  "version": "3.0.2",
+  "version": "3.1.2",
   "description": "napp logger. log write to nogger log write system",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -28,8 +28,9 @@
     "log-write"
   ],
   "dependencies": {
-    "@napp/logger": "^3.2.6",
+    "@napp/exception": "^5.1.8",    
+    "@napp/logger": "^3.3.3",
     "cross-fetch": "^4.0.0",
-    "jose": "^4.14.6"
+    "jose": "^5.1.3"
   }
 }
