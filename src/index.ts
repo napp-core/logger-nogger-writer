@@ -28,8 +28,11 @@ interface INoggerPayload {
 
 
 
+export interface ILogWriterOfNogger extends ILogWriter {
 
-export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
+    writeWaiter: () => Promise<void>
+}
+export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
 
     const wData: Array<ILogItem> = [];
     const $ = {
@@ -169,10 +172,22 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriter {
         }
     }
 
-    let writer: ILogWriter = (l: ILogItem) => {
+
+    let writer: ILogWriterOfNogger = ((l: ILogItem) => {
         wData.push(l);
         doWrite();
+    }) as ILogWriterOfNogger
+
+    writer.writeWaiter = async () => {
+        while (true) {
+            if (wData.length === 0 && $.basy === false) {
+                return void 0;
+            }
+            await sleep(50)
+        }
     }
+
+
 
 
 
