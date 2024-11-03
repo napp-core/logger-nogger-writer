@@ -34,7 +34,7 @@ export interface ILogWriterOfNogger extends ILogWriter {
 }
 export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
 
-    const wData: Array<ILogItem> = [];
+    let wData: Array<ILogItem> = [];
     const $ = {
         basy: false,
         token: '',
@@ -71,15 +71,20 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
         while (i++ < loop) {
             try {
                 let url = `${opt.serverBaseUrl}/api/write`;
-                let token = await genToken();
+
+                let headers: HeadersInit = {
+                    'Content-Type': 'application/json; charset=utf-8'
+                }
+                if (opt.serverSecret) {
+                    let token = await genToken();
+                    headers["authorization"] = 'bearer ' + token;
+                }
+
                 // console.log(url, token, body);
 
                 let resp = await fetch(url, {
                     method: 'post',
-                    headers: {
-                        'Content-Type': 'application/json; charset=utf-8',
-                        authorization: 'bearer ' + token
-                    },
+                    headers,
                     body: JSON.stringify(body)
                 });
 
@@ -136,20 +141,8 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
 
         $.basy = true;
         try {
-            await sleep(200);
-            let items = wData.splice(0);
-
-            if (items.length > 0) {
-                if (items.length > 1) {
-                    await httpWrite(items.map(it => item2nogger(it)), opt.tryCount || 3)
-                } else {
-                    await httpWrite(item2nogger(items[0]), opt.tryCount || 3)
-                }
-            }
-
-            if (wData.length > 0) {
-                await _doWrite();
-            }
+            await sleep(20)
+            await _doWrite();
         } catch (error) {
             console.log('log write error', error)
         } finally {
@@ -157,7 +150,8 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
         }
     }
     const _doWrite = async () => {
-        let items = wData.splice(0);
+        let items = wData;
+        wData = [];
 
         if (items.length > 0) {
             if (items.length > 1) {
