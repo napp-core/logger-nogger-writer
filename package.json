@@ -28,9 +28,9 @@
     "log-write"
   ],
   "dependencies": {
-    "@napp/exception": "^5.1.8",
+    "@napp/exception": "^5.1.9",
     "@napp/logger": "^3.3.3",
     "cross-fetch": "^4.0.0",
-    "jose": "^5.1.3"
+    "jose": "^5.9.6"
   }
 }
