@@ -7,7 +7,7 @@ export interface OWriter2nogger {
     clintHost: string;
     clientSource: string;
     serverBaseUrl: string
-    serverSecret: string;
+    serverSecret?: string;
     tryCount?: number
 }
 
@@ -41,14 +41,14 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
         exp: 0
     };
 
-    const genToken = async () => {
+    const genToken = async (secreter: string) => {
         let n = Date.now();
 
         if ($.exp > n) {
             return $.token;
         }
 
-        let secret = new TextEncoder().encode(opt.serverSecret)
+        let secret = new TextEncoder().encode(secreter)
         let builder = new jose.SignJWT({
             h: opt.clintHost,
             s: opt.clientSource
@@ -76,19 +76,17 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
                     'Content-Type': 'application/json; charset=utf-8'
                 }
                 if (opt.serverSecret) {
-                    let token = await genToken();
+                    let token = await genToken(opt.serverSecret);
                     headers["authorization"] = 'bearer ' + token;
                 }
-
-                // console.log(url, token, body);
 
                 let resp = await fetch(url, {
                     method: 'post',
                     headers,
+                    credentials: opt.serverSecret ? 'include' : 'omit',
                     body: JSON.stringify(body)
                 });
 
-                // console.log('333333333',resp)
 
                 if (resp.ok) {
                     return await resp.json();
@@ -105,7 +103,7 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
                     nested = new Exception(respText)
                 }
 
-                throw new Exception(["cannot write log. response ${statusText}. status (${status})", { status: resp.status, statusText: resp.statusText }], {
+                throw new Exception(`cannot write log. response ${resp.status}. status (${resp.statusText})`, {
                     name: 'log.write.cannot',
                     cause: nested
                 })
