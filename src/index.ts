@@ -70,7 +70,7 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
         let err: any = undefined;
         while (i++ < loop) {
             try {
-                let url = `${opt.serverBaseUrl}/write`;
+                let url = `${opt.serverBaseUrl}/api/write`;
 
                 let headers: HeadersInit = {
                     'Content-Type': 'application/json; charset=utf-8'
