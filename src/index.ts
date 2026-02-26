@@ -1,5 +1,5 @@
 import { Exception } from "@napp/exception";
-import { ILogItem, ILogWriter, LogLevel } from "@napp/logger"
+import { ILogItem, LogLevel } from "@napp/logger"
 import { fetch } from "cross-fetch"
 import * as jose from 'jose';
 
@@ -9,6 +9,8 @@ export interface OWriter2nogger {
     serverBaseUrl: string
     serverSecret?: string;
     tryCount?: number
+
+    maxQueue?: number;
 }
 
 type NoggerAttributeValue = {}
@@ -28,9 +30,10 @@ interface INoggerPayload {
 
 
 
-export interface ILogWriterOfNogger extends ILogWriter {
+export interface ILogWriterOfNogger {
 
-    writeWaiter: () => Promise<void>
+    waitAll: () => Promise<void>
+    write: (log: ILogItem) => Promise<void>
 }
 export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
 
@@ -104,7 +107,7 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
                 }
 
                 throw new Exception(`cannot write log. response ${resp.status}. status (${resp.statusText})`, {
-                    name: 'log.write.cannot',
+                    kind: 'log.write.cannot',
                     cause: nested
                 })
 
@@ -120,15 +123,15 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
 
         let ret: INoggerPayload = {
             c: it.logname,
-            l: LogLevel[it.level],
-            i: (it.attrs?.instance || it.attrs?.ins) as string || undefined,
-            j: it.attrs?.job as string || undefined,
-            k: (it.attrs?.logKey || it.attrs?.msgKey) as string || undefined,
+            l: it.levelText,
+            i: (it.attr?.instance || it.attr?.ins) as string || undefined,
+            j: it.attr?.job as string || undefined,
+            k: (it.attr?.logKey || it.attr?.msgKey) as string || undefined,
             m: it.message,
-            a: it.attrs,
+            a: it.attr,
             n: new Date(it.timestamp),
-            u: it.attrs?.track as string || undefined,
-            t: Array.isArray(it.attrs?.tags) ? it.attrs?.tags as any : undefined
+            u: it.attr?.track as string || undefined,
+            t: Array.isArray(it.attr?.tags) ? it.attr?.tags as any : undefined
 
         }
         return ret;
@@ -164,24 +167,21 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
         }
     }
 
+    const max = opt.maxQueue ?? 5000;
 
-    let writer: ILogWriterOfNogger = ((l: ILogItem) => {
-        wData.push(l);
-        doWrite();
-    }) as ILogWriterOfNogger
-
-    writer.writeWaiter = async () => {
-        while (true) {
-            if (wData.length === 0 && $.basy === false) {
-                return void 0;
+    let writer: ILogWriterOfNogger = {
+        async write(log) {
+            if (wData.length < max) {
+                wData.push(log);
+                await doWrite()
             }
-            await sleep(50)
-        }
+        },
+        async waitAll() {
+            while ($.basy) {
+                await sleep(50)
+            }
+        },
     }
-
-
-
-
 
     return writer;
 }

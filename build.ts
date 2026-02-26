@@ -1,3 +1,4 @@
+import { writeFileSync, readFileSync } from 'node:fs';
 import pkg from './package.json';
 
 const npkg = {
@@ -7,10 +8,21 @@ const npkg = {
     author: pkg.author,
     license: pkg.license,
     repository: pkg.repository,
-    dependencies: pkg.dependencies,
+    peerDependencies: pkg.peerDependencies,
     keywords: pkg.keywords,
-    main: "./index.js",
-    types: "./index.d.ts",
+    main: "./cjs/index.js",
+    module: "./esm/index.js",
+    types: "./types/index.d.ts",
+    exports: {
+        ".": {
+            types: "./types/index.d.ts",
+            import: "./esm/index.js",
+            require: "./cjs/index.js"
+        }
+    },
 }
-console.log(JSON.stringify(npkg, null, 4))
+
+writeFileSync('./lib/package.json', `${JSON.stringify(npkg, null, 4)}\n`, 'utf-8');
+writeFileSync('./lib/esm/package.json', '{"type":"module"}\n', 'utf-8');
+writeFileSync('./lib/.npmrc', readFileSync('./.npmrc').toString());
 

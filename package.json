@@ -1,15 +1,26 @@
 {
   "name": "@napp/logger-nogger-writer",
-  "version": "3.2.6",
+  "version": "3.3.12",
   "description": "napp logger. log write to nogger log write system",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js"
+    }
+  },
   "scripts": {
     "clear": "npx rimraf --glob lib/**",
     "tsc": "tsc -p tsconfig.json",
     "prebuild": "npm version patch && npm run clear",
-    "build": "tsc -p tsconfig.lib.json",
-    "postbuild": "ts-node build.ts > ./lib/package.json",
+    "build:types": "tsc -p tsconfig.build.types.json",
+    "build:esm": "tsc -p tsconfig.build.esm.json",
+    "build:cjs": "tsc -p tsconfig.build.cjs.json",
+    "build": "npm run build:types && npm run build:esm && npm run build:cjs",
+    "postbuild": "ts-node build.ts",
     "prepush": "npm run build",
     "push": "cd lib & npm publish --access=public"
   },
@@ -17,8 +28,9 @@
   "license": "ISC",
   "repository": "https://github.com/napp-core/logger-nogger-writer.git",
   "devDependencies": {
-    "ts-node": "latest",
-    "typescript": "latest"
+    "rimraf": "6",
+    "ts-node": "10",
+    "typescript": "5"
   },
   "keywords": [
     "logger",
@@ -27,10 +39,10 @@
     "log-file",
     "log-write"
   ],
-  "dependencies": {
-    "@napp/exception": "^5.1.9",
-    "@napp/logger": "^3.3.3",
+  "peerDependencies": {
     "cross-fetch": "^4.1.0",
-    "jose": "^5.10.0"
+    "jose": "^6.1.3",
+    "@napp/exception": "^9.1.5",
+    "@napp/logger": "^4.1.9"
   }
 }
