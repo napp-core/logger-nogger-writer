@@ -124,9 +124,9 @@ export function logWriter2nogger(opt: OWriter2nogger): ILogWriterOfNogger {
         let ret: INoggerPayload = {
             c: it.logname,
             l: it.levelText,
-            i: (it.attr?.instance || it.attr?.ins) as string || undefined,
+            i: (it.attr?.instance ?? it.attr?.ins) as string || undefined,
             j: it.attr?.job as string || undefined,
-            k: (it.attr?.logKey || it.attr?.msgKey) as string || undefined,
+            k: (it.attr?.logKey ?? it.attr?.msgKey ?? it.attr?.key) as string || undefined,
             m: it.message,
             a: it.attr,
             n: new Date(it.timestamp),
