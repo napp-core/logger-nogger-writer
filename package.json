@@ -1,6 +1,6 @@
 {
   "name": "@napp/logger-nogger-writer",
-  "version": "3.3.13",
+  "version": "3.3.14",
   "description": "napp logger. log write to nogger log write system",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
